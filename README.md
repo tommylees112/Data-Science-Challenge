@@ -1,5 +1,4 @@
-# Data-Science-Challenge
-OS Data Science Club Challenge 
+#OS DSC Data-Science-Challenge
 
 Here you will find the code that I have been working on as part of the DSC Challenge, set up in OS to extend and share our Data Science skills.
 
