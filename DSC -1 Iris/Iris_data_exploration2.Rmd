@@ -1,0 +1,355 @@
+---
+title: "Iris DataExploration"
+author: "thomas.lees"
+date: "21/03/2017"
+output: html_document
+---
+
+## Install the required packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# install.packages('tidyverse')
+# install.packages('gridExtra')
+# install.packages('forcats')
+#IN
+```
+
+## Import the required packages 
+
+https://cran.r-project.org/web/packages/ggforce/vignettes/Visual_Guide.html - ggforce
+- 
+
+```{r}
+library(tidyverse)
+library(grid)
+library(gridExtra)
+library(forcats)
+```
+
+## Data cleaning
+load iris data into a tibble for more intuitive exploration and manipulation
+
+WHAT: perform some quick raw iris data overview and then transform it to create the long version. Then we coerce some character variables to R factors for better graphic analysis later. Then we proceed onto performing some housekeeping in which we check for missing and special values. 
+
+```{r}
+iris = as_tibble(iris)
+summary(iris)
+```
+
+Have a SECOND LONG FORMAT tibble (https://www.kaggle.com/edmwanza1/d/uciml/iris/descriptive-analytics-demo-using-iris)
+
+long_iris is longer with 600 observations & 4 variables. Don't be confused, the data is the same just formatted differently.
+
+```{r}
+long_iris <- iris %>% 
+  gather(key= 'part', value = 'value', Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) %>%
+  separate(part,c('part','measure'), sep = '\\.')
+```
+
+gather() - key = the column names you want / value = the value names / the columns you want under the key 
+separate() - split the 'part' column at the '.' into two columns - 'part' and 'measure'
+note: needs to be \\. to escape the first \ and then \.
+
+```{r}
+long_iris2 <- iris %>%
+  gather(key='part',value='value',Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) %>%
+  separate(part,into = c('part','measure'), sep='\\.')
+```
+
+coerce character variables into factors for ease of analysis
+
+```{r}
+factors <- c('part','measure')
+long_iris[factors] <- lapply(long_iris[factors],as.factor)
+```
+
+## early exploration
+
+use sapply() to apply a function to each variable 
+
+```{r}
+
+sapply(iris,class)
+
+sapply(long_iris,class)
+
+sapply(long_iris2,class)
+
+```
+
+check for missing values
+```{r}
+# CREATE A FUNCTION
+na_data <- function(x){
+  sum(is.na(x))/length(x)*100
+}
+#WHY DOES IT NEED THE /LENGTH*100??
+
+na_data2 <- function(x){
+  sum(is.na(x))
+}
+
+#loop it over our dataset
+apply(long_iris,2,na_data2)
+
+```
+
+
+## map() series to loop over variables
+
+map is super useful, just input a tibble and then the function that you want to be repeated over the data
+```{r}
+map(iris,sd)
+map(iris,mean)
+```
+
+check for other values (non numeric)
+
+is_special <- function(x){
+  if(is.numeric(x)) !is.finite(x) else is.na(x)
+}
+
+sapply(long_iris,is_special)
+
+## Visualise the data
+
+Some initial plots of individual dimensions
+
+```{r}
+ggplot(iris) +
+  geom_point(mapping=aes(x=Sepal.Length,y=Sepal.Width,col=Species,shape=Species))
+```
+
+```{r}
+ggplot(iris,mapping=aes(x=iris$Sepal.Width,y=iris$Sepal.Length,col=Species)) +
+  geom_point() +
+  geom_smooth()
+```
+
+```{r}
+ggplot(iris, mapping = aes())+
+  geom_bar(mapping = aes(x=Species,fill=Species))
+```
+
+
+```{r}
+ggplot(iris, mapping = aes(fill=Species)) +
+  geom_boxplot(mapping = aes(x=iris$Species,y=iris$Sepal.Width))
+```
+
+
+
+## More complicated plots (and multiple plots)
+
+### Imported Function
+Super useful function = plotting multiple ggplots in a grid
+'multiplot'
+
+```{r}
+# Multiple plot function
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+P1 <- ggplot(iris, mapping = aes(x = Sepal.Length, color = Species, fill=Species)) +
+  geom_freqpoly(binwidth=0.3) +
+  theme(legend.position = 'none')
+
+P2 <- ggplot(iris, mapping = aes(x = Sepal.Width, color = Species, fill=Species)) +
+  geom_freqpoly(binwidth=0.3) +
+  theme(legend.position = 'none')
+
+P3 <- ggplot(iris, mapping = aes(x = Petal.Length, color = Species, fill=Species)) +
+  geom_freqpoly(binwidth=0.3) +
+  theme(legend.position = 'none')
+
+P4 <- ggplot(iris, mapping = aes(x = Petal.Length, color = Species, fill=Species)) +
+  geom_freqpoly(binwidth=0.3)
+
+multiplot(P1, P2, P3, P4, cols=2)
+```
+
+### Or you can do this with grid.arrange()
+```{r}
+
+P1 <- ggplot(iris, mapping = aes(x = Sepal.Length, color = Species, fill=Species)) +
+  geom_density(alpha=0.3) +
+  theme(legend.position = 'none')
+
+P2 <- ggplot(iris, mapping = aes(x = Petal.Length, color = Species, fill=Species)) +
+  geom_density(alpha=0.3) +
+  theme(legend.position = 'none')
+
+P3 <- ggplot(iris, mapping = aes(x = Sepal.Width, color = Species, fill=Species)) +
+  geom_density(alpha=0.3) +
+  theme(legend.position = 'none')
+
+P4 <- ggplot(iris, mapping = aes(x = Petal.Width, color = Species, fill=Species)) +
+  geom_density(alpha=0.3) +
+  theme(legend.position = 'none')
+
+grid.arrange(P1,
+             P2,
+             P3,
+             P4,
+             nrow = 2,
+             top = textGrob("Iris Density Plot", gp=gpar(fontsize=10)))
+
+```
+
+Working with the long_iris dataframe can help visualise the data much easier by having columns to split the data up 
+
+```{r}
+head(long_iris)
+```
+
+Let's draw boxplots ontop of underlying points to show how values vary for each species
+```{r}
+ggplot(data= long_iris, mapping= aes(x = Species, y = value, col = Species)) +
+  geom_jitter(alpha=0.3, size=0.8) + 
+  stat_boxplot(alpha = 0.5) + 
+  facet_grid(part~measure) +
+  ggtitle('Iris: Feature Exploration')
+```
+
+```{r}
+
+iris_mean <- long_iris %>%
+  group_by(Species,part,measure) %>%
+  summarize(
+    mean = mean(value)
+  ) 
+iris_mean
+
+ggplot(data= iris_mean, mapping= aes(x=measure,y=mean,fill=Species)) +
+  geom_bar(stat='identity',position='dodge')
+
+
+```
+
+Let's build some error bars (calculate the standard error for the plots)
+```{r}
+iris_mean_se <- long_iris %>%
+  group_by(Species,part,measure) %>%
+  summarise(
+    mean = mean(value),
+    sd = sd(value),
+    ymax = mean(value) + sd(value),
+    ymin = mean(value) - sd(value)
+  )
+iris_mean_se
+
+ggplot(iris_mean_se, mapping = aes(x=measure,y=mean)) +
+  geom_bar(aes(fill = Species) ,stat='identity',position='dodge') + 
+  geom_errorbar(mapping = aes(ymin= ymin, ymax= ymax), width = 0.2)
+
+#NOTE you need to set the positition dodge to the same to get them to line up (0.9 = default value for bars)
+#also necessary to place fill=Species in the entire ggplot mapping, otherwise only in local environment and not passed to 
+#geom_errorbar
+dodge <- position_dodge(width = 0.9)
+
+ggplot(iris_mean_se, mapping = aes(x=measure,y=mean,fill = Species)) +
+  geom_bar(stat='identity', position=dodge) + 
+  geom_errorbar(mapping = aes(ymin= ymin, ymax= ymax), position= dodge, width = 0.2)
+
+```
+
+https://www.r-bloggers.com/building-barplots-with-error-bars/
+
+```{r}
+limits <- aes(ymax = iris_mean_se$ymax,
+              ymin = long_iris$ymin)
+dodge <- position_dodge(width = 0.9)
+
+ggplot(data = iris_mean_se, mapping = aes(x=measure,y=mean, fill = Species)) +
+  geom_bar(stat='identity', position= dodge) +
+  geom_errorbar(mapping=aes(ymin= ymin, ymax = ymax), position = dodge, width = 0.2)
+
+#BUT HOW DO I SUBSET BY THE PART OF THE PLANT?
+
+ggplot(data = iris_mean_se, mapping = aes(x=measure,y=mean, fill = Species)) +
+  geom_bar(stat='identity', position= dodge) +
+  geom_errorbar(mapping=aes(ymin= ymin, ymax = ymax), position = dodge, width = 0.2)
+
+```
+
+
+## Model the dataset
+```{r}
+library(modelr)
+options(na.action = na.warn)
+
+#allows base R modelling functions to be wrapped into a piped operations
+```
+
+I want to:
+  1) create a linear regression which predicts sepal length from sepal width
+  2) repeat for sepal length vs. petal width // sepal width vs. petal width // petal width vs. petal length etc.
+  3) try and predict whether the input value is of a sepal or a petal?
+  4) classify data and predict species (setosa, versicolor, virginica)
+
+Give each flower a unique ID so they can be subset from the long dataframe
+
+```{r}
+# first we must number the flowers from 1: end (number of rows in the dataset)
+iris$Flower <- 1:nrow(iris)
+iris
+```
+
+```{r}
+wide_iris <- iris %>%
+  gather(key='key', value='value', -Species, -Flower) %>%
+  separate(key, c('Part','Measure'), sep= "\\.") 
+
+wide_iris
+```
+
+```{r}
+
+```
+
