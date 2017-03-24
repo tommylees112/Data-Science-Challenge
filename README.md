@@ -1,6 +1,6 @@
 # OS DSC Data-Science-Challenge
 
-Here you will find the code that I have been working on as part of the DSC Challenge, set up in OS to extend and share our Data Science skills.
+Here you will find the code that the Data Science Club have been working on as part of the DSC Challenge, set up in OS to extend and share our Data Science skills.
 
 The mission statement and values of the DSC Challenge can be found below:
 
