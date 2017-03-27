@@ -395,11 +395,45 @@ spread()
 -taking the value column as the valu for each of those cells!
 WE have tidy data :) 
 
+## 1 The relationship between length and width by species
+```{r}
+library(ggplot2)
+
+lm_iris <- ggplot(data = wide_iris, mapping= aes(x= Width, y= Length, col=Species))
+
+#how does length and width correlate for each species? (on separate charts)
+lm_iris1 <- lm_iris+
+  geom_jitter(alpha= 0.4, size= 0.8) +
+  facet_grid(. ~ Species) +
+  stat_smooth(method= 'lm', se=F) + 
+  ggtitle("Iris: Length vs. Width by Species")
+
+lm_iris1
+
+#how does length and width correlate for each part of the flower?
+lm_iris2 <- lm_iris +
+  geom_jitter(alpha=0.4, size=0.8) +
+  facet_grid(.~ Part) +
+  ggtitle("Iris: Length vs. Width by Flower Part")
+  
+lm_iris2
+
+#how does length and width correlate for each species (on a single chart)
+lm_iris3 <- lm_iris +
+  geom_point(alpha = 0.4, size= 0.8) + stat_smooth(method = 'lm', fullrange= T, size= 0.5) +
+  ggtitle("Iris: Length vs. Width by Species 2")
+  
+lm_iris3
+```
+
+```{r}
+
+```
+
 
 Resources:
 http://michael.hahsler.net/SMU/EMIS7332/R/regression.html
 https://rpubs.com/lwaldron/iris_regression
 https://www.kaggle.com/mgabrielkerr/d/uciml/iris/visualizing-knn-svm-and-xgboost-on-iris-dataset
 https://www.kaggle.com/edmwanza1/d/uciml/iris/descriptive-analytics-demo-using-iris 
-
 
