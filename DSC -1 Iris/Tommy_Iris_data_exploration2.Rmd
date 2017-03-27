@@ -10,8 +10,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 
 # install.packages('tidyverse')
-# install.packages('gridExtra')
-# install.packages('forcats')
+ install.packages('gridExtra')
+ install.packages('forcats')
 #IN
 ```
 
@@ -137,7 +137,6 @@ ggplot(iris, mapping = aes())+
 ggplot(iris, mapping = aes(fill=Species)) +
   geom_boxplot(mapping = aes(x=iris$Species,y=iris$Sepal.Width))
 ```
-
 
 
 ## More complicated plots (and multiple plots)
@@ -291,11 +290,22 @@ ggplot(iris_mean_se, mapping = aes(x=measure,y=mean)) +
 #NOTE you need to set the positition dodge to the same to get them to line up (0.9 = default value for bars)
 #also necessary to place fill=Species in the entire ggplot mapping, otherwise only in local environment and not passed to 
 #geom_errorbar
+
+#USE MULTIPLOT to have multiple plots of the different subsets of teh data 
 dodge <- position_dodge(width = 0.9)
 
-ggplot(iris_mean_se, mapping = aes(x=measure,y=mean,fill = Species)) +
-  geom_bar(stat='identity', position=dodge) + 
-  geom_errorbar(mapping = aes(ymin= ymin, ymax= ymax), position= dodge, width = 0.2)
+petal <- ggplot(data = subset(iris_mean_se, part=='Petal'), mapping = aes(x=measure,y=mean,fill = Species)) +
+  geom_bar(stat='identity', position= dodge) + 
+  geom_errorbar(mapping = aes(ymin= ymin, ymax= ymax), position= dodge, width = 0.2) +
+  theme(legend.position = 'none')+
+  ggtitle("Iris: Petal")
+
+sepal <- ggplot(data = subset(iris_mean_se, part=='Sepal'), mapping = aes(x=measure,y=mean,fill = Species)) +
+  geom_bar(stat='identity', position= dodge) + 
+  geom_errorbar(mapping = aes(ymin= ymin, ymax= ymax), position= dodge, width = 0.2) +
+  ggtitle("Iris: Sepal")
+
+multiplot(petal, sepal, cols=2)
 
 ```
 
@@ -318,7 +328,6 @@ ggplot(data = iris_mean_se, mapping = aes(x=measure,y=mean, fill = Species)) +
 
 ```
 
-
 ## Model the dataset
 ```{r}
 library(modelr)
@@ -334,6 +343,8 @@ I want to:
   4) classify data and predict species (setosa, versicolor, virginica)
 
 Give each flower a unique ID so they can be subset from the long dataframe
+- tidy the dataset (EACH VARIABLE has to be a column)
+- linear regression of length and width of each specie - need WIDTH and LENGTH as columns in dataframe
 
 ```{r}
 # first we must number the flowers from 1: end (number of rows in the dataset)
@@ -342,14 +353,53 @@ iris
 ```
 
 ```{r}
+
+#original data
+iris
+
+#stage1
+
+wide_iris <- iris %>%
+  gather(key='key', value='value', -Species, -Flower) 
+
+wide_iris
+
+#stage2
+
 wide_iris <- iris %>%
   gather(key='key', value='value', -Species, -Flower) %>%
-  separate(key, c('Part','Measure'), sep= "\\.") 
+  separate(key, c('Part','Measure'), sep= "\\.")
+
+wide_iris
+
+#stage3
+
+wide_iris <- iris %>%
+  gather(key='key', value='value', -Species, -Flower) %>%
+  separate(key, c('Part','Measure'), sep= "\\.") %>%
+  spread(Measure, value)
 
 wide_iris
 ```
+### what are gather, separate and spread doing?
+http://r4ds.had.co.nz/tidy-data.html#spreading-and-gathering 
+gather()
+- select a key which is the NAME OF THE COLUMNS in the untidy data (current variables)
+- the value for that variable 
+-keep only SPECIES, FLOWER columns and then the variable being measured (key=) and then value for that observation (value=)
+separate()
+-split a column into two 
+-split the key column, into 'part' and 'measure' at the '.' sign
+spread()
+-then spread the measure column into its separate components (length and width)
+-taking the value column as the valu for each of those cells!
+WE have tidy data :) 
 
-```{r}
 
-```
+Resources:
+http://michael.hahsler.net/SMU/EMIS7332/R/regression.html
+https://rpubs.com/lwaldron/iris_regression
+https://www.kaggle.com/mgabrielkerr/d/uciml/iris/visualizing-knn-svm-and-xgboost-on-iris-dataset
+https://www.kaggle.com/edmwanza1/d/uciml/iris/descriptive-analytics-demo-using-iris 
+
 
