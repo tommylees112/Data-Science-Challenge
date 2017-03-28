@@ -425,7 +425,8 @@ lm_iris3 <- lm_iris +
   
 lm_iris3
 ```
-
+## b
+https://www.datacamp.com/community/tutorials/machine-learning-in-r#gs.arwbRyA
 ```{r}
 
 ```
