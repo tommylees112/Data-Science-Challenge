@@ -10,9 +10,11 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 
 # install.packages('tidyverse')
- install.packages('gridExtra')
- install.packages('forcats')
-#IN
+# install.packages('gridExtra')
+# install.packages('forcats')
+#install.packages('viridis')
+install.packages('class')
+#install.packages('modelr')
 ```
 
 ## Import the required packages 
@@ -25,6 +27,7 @@ library(tidyverse)
 library(grid)
 library(gridExtra)
 library(forcats)
+library(modelr)
 ```
 
 ## Data cleaning
@@ -425,14 +428,159 @@ lm_iris3 <- lm_iris +
   
 lm_iris3
 ```
-## b
+
+## k nearest neighbours algorithm
 https://www.datacamp.com/community/tutorials/machine-learning-in-r#gs.arwbRyA
+
+to check if packages installed:
+- any(grepl("<name of your package>", installed.packages()))
+
+### Normalisation
+When? 
+In short: when you suspect that the data is not consistent. You can easily see this when you go through the results of the summary() function. 
+Look at the minimum and maximum values of all the (numerical) attributes. 
+If you see that one attribute has a wide range of values, you will need to normalize your dataset, because this means that the distance will be dominated by this feature. 
+For example, if your dataset has just two attributes, X and Y, and X has values that range from 1 to 1000, while Y has values that only go from 1 to 100, then Y's influence on the distance function will usually be overpowered by X's influence. 
+When you normalize, you actually adjust the range of all features, so that distances between variables with larger ranges will not be over-emphasised.
+
+Why?
+k-nearest neighbors with an Euclidean distance measure because we want all features to contribute equally
+
+what?
+Example normalisation - adjustment of each example individually
+Feature normalisation - adjust each feature in the same way across all examples
+
+How?
+create normalisation function
 ```{r}
+normalise <- function(x) {
+  numerator <- x - min(x)
+  denominator <- max(x) - min(x)
+  return(numerator/denominator)
+}
+
+zVar <- (myVar - mean(myVar)) / sd(myVar)
 
 ```
 
+or use the scale() function
+https://www.r-bloggers.com/r-tutorial-series-centering-variables-and-generating-z-scores-with-the-scale-function/ 
+  x = a numeric object (eg column in data frame)
+  center = TRUE the means subtracted to center around 0
+  scale = TRUE the centered column values divided by standard deviation
+  (both true use the root mean square & a z score is calculated)
+  
+  http://stackoverflow.com/questions/15215457/standardize-data-columns-in-r 
 
-Resources:
+
+```{r}
+iris_norm <- iris %>%
+  mutate_each_(funs(scale(.) %>% as.vector),
+               vars= c('Sepal.Length','Sepal.Width','Petal.Length','Petal.Width'))
+
+summary(iris_norm)
+
+#recreate long form
+long_iris_norm <- iris_norm %>% 
+  gather(key= 'part', value = 'value', Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) %>%
+  separate(part,c('part','measure'), sep = '\\.')
+
+#coerce characters into factors
+factors <- c('part','measure')
+long_iris[factors] <- lapply(long_iris[factors],as.factor)
+
+#recreate wide form
+wide_iris_norm <- iris_norm %>%
+  gather(key='key', value='value', -Species, -Flower) %>%
+  separate(key, c('Part','Measure'), sep= "\\.") %>%
+  spread(Measure, value)
+
+```
+
+#### Z score normalisation
+
+See http://sebastianraschka.com/Articles/2014_about_feature_scaling.html
+- sigma = 1, mu = 0
+- features rescaled so they have properties of standard normal distribution
+-
+
+other use cases:
+- logistic regression, SVMs, perceptrons, neural networks etc. if you are using gradient descent/ascent-based optimization, otherwise some weights will update much faster than others
+-Principal Component Analysis (PCA) as an example where standardization is crucial, since it is “analyzing” the variances of the different features.
+
+
+Note:
+- think about whether we want to “standardize” or “normalize” (here: scaling to [0, 1] range) our data. 
+- Some algorithms assume that our data is centered at 0
+
+Equations:
+Standardization:
+z=x−μ/σ
+
+with mean:
+μ=1/N * ∑i=1N(xi)
+
+and standard deviation:
+σ= sqrt(1/N *∑i=1N (xi−μ)^2)
+
+#### Minmax scaling (normalisation)
+- data is scaled to a fixed range - usually 0 to 1.
+- xnorm = x-xmin / xmax-xmin
+
+use case:
+A popular application is image processing, where pixel intensities have to be normalized to fit within a certain range (i.e., 0 to 255 for the RGB color range). Also, typical neural network algorithm require data that on a 0-1 scale.
+
+## Separate into Training & Test Data
+
+We will put 67% data into training set, 33% into test set.
+
+N.B: instances of all three species needs to be present at more or less the same ratio as in your original data set.
+
+Therefore, we randomly sample a equal ratio from each species
+
+### Randomly Sample
+```{r}
+#set seed to make work reproducible
+set.seed(12345)
+
+#create sample vector (probabilities set @ 67% : 33%)
+sample_set <- sample(2, nrow(iris_norm), replace=TRUE, prob= c(0.67, 0.33))
+
+#add to tibble
+iris_norm %>%
+  add_column(sample_set)
+```
+
+N.B:  the 'replace =' argument is set to TRUE: this means that you assign a 1 or a 2 to EVERY ROW (if it was false you wouldn't be able to reapply 1/2 to the rows).
+
+you assign a 1 or a 2 to a certain row and then reset the vector of 2 to its original state. This means that, for the next rows in your data set, you can either assign a 1 or a 2, each time again. The probability of choosing a 1 or a 2 should not be proportional to the weights amongst the remaining items, so you specify probability weights.
+
+### Subset training & test data
+```{r}
+
+iris_training <- iris_norm[sample_set==1,1:4]
+iris_test <- iris_norm[sample_set==2,1:4]
+
+iris_training
+iris_test
+
+```
+```{r}
+
+#create training tibble
+iris_training <- iris_norm %>%
+  filter(sample_set == 1)
+
+#create test tibble
+iris_test <- iris_norm %>%
+  filter(sample_set == 2)
+
+summary(iris_training)
+summary(iris_test)
+```
+NOTE: there are differnet numbers of species within test data & training data
+
+# Resources:
 http://michael.hahsler.net/SMU/EMIS7332/R/regression.html
 https://rpubs.com/lwaldron/iris_regression
 https://www.kaggle.com/mgabrielkerr/d/uciml/iris/visualizing-knn-svm-and-xgboost-on-iris-dataset
