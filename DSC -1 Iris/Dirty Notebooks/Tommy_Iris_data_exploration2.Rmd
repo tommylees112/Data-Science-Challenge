@@ -2,7 +2,7 @@
 title: "Iris DataExploration"
 author: "thomas.lees"
 date: "21/03/2017"
-output: html_document
+output: rmarkdown::github_document
 ---
 
 ## Install the required packages
@@ -13,8 +13,12 @@ knitr::opts_chunk$set(echo = TRUE)
 # install.packages('gridExtra')
 # install.packages('forcats')
 #install.packages('viridis')
-install.packages('class')
+#install.packages('class')
 #install.packages('modelr')
+#install.packages('kknn')
+#install.packages('pbkrtest')
+#install.packages('caret')
+
 ```
 
 ## Import the required packages 
@@ -28,6 +32,12 @@ library(grid)
 library(gridExtra)
 library(forcats)
 library(modelr)
+library(caret)
+library(kknn)
+```
+
+```{r}
+#update.packages(checkBuilt = TRUE)
 ```
 
 ## Data cleaning
@@ -120,8 +130,16 @@ sapply(long_iris,is_special)
 Some initial plots of individual dimensions
 
 ```{r}
-ggplot(iris) +
-  geom_point(mapping=aes(x=Sepal.Length,y=Sepal.Width,col=Species,shape=Species))
+sepal_plot <- ggplot(iris) +
+  geom_point(mapping=aes(x=Sepal.Length,y=Sepal.Width,col=Species,shape=Species)) +
+  theme(legend.position = 'none')
+
+petal_plot <- ggplot(iris) +
+  geom_point(mapping=aes(x=Petal.Length,y=Petal.Width,col=Species,shape=Species)) +
+  theme(legend.position = 'top')
+
+multiplot(sepal_plot, petal_plot, cols=2)
+
 ```
 
 ```{r}
@@ -210,7 +228,7 @@ P3 <- ggplot(iris, mapping = aes(x = Petal.Length, color = Species, fill=Species
   geom_freqpoly(binwidth=0.3) +
   theme(legend.position = 'none')
 
-P4 <- ggplot(iris, mapping = aes(x = Petal.Length, color = Species, fill=Species)) +
+P4 <- ggplot(iris, mapping = aes(x = Petal.Width, color = Species, fill=Species)) +
   geom_freqpoly(binwidth=0.3)
 
 multiplot(P1, P2, P3, P4, cols=2)
@@ -459,7 +477,7 @@ normalise <- function(x) {
   return(numerator/denominator)
 }
 
-zVar <- (myVar - mean(myVar)) / sd(myVar)
+#zVar <- (myVar - mean(myVar)) / sd(myVar)
 
 ```
 
@@ -547,8 +565,8 @@ set.seed(12345)
 sample_set <- sample(2, nrow(iris_norm), replace=TRUE, prob= c(0.67, 0.33))
 
 #add to tibble
-iris_norm %>%
-  add_column(sample_set)
+iris_norm['sample_set'] <- sample_set
+iris_norm
 ```
 
 N.B:  the 'replace =' argument is set to TRUE: this means that you assign a 1 or a 2 to EVERY ROW (if it was false you wouldn't be able to reapply 1/2 to the rows).
@@ -558,15 +576,141 @@ you assign a 1 or a 2 to a certain row and then reset the vector of 2 to its ori
 ### Subset training & test data
 ```{r}
 
+#training and test variables taken (remove labels)
 iris_training <- iris_norm[sample_set==1,1:4]
 iris_test <- iris_norm[sample_set==2,1:4]
 
+#training and test LABELS extracted
+iris_training_labels <- iris_norm[sample_set==1,5]
+iris_test_labels <- iris_norm[sample_set==2,5]
+
+count(iris_training)
+count(iris_test)
+
+iris_training_labels
 iris_training
-iris_test
 
 ```
+
+### Build 
+```{r}
+#library(class)
+
+#iris_pred <- knn(train= iris_training, test= iris_test, cl= iris_training_labels, k=3)
+
+```
+
+```{r}
+#install.packages('kknn')
+#library(kknn)
+
+iris_norm_train <- iris_norm[sample_set==1,1:5]
+iris_norm_test <- iris_norm[sample_set==2,1:5]
+
+#training and test variables taken
+iris_training <- iris_norm[sample_set==1,1:4]
+iris_test <- iris_norm[sample_set==2,1:4]
+
+#training and test LABELS extracted
+iris_training_labels <- iris_norm[sample_set==1,5]
+iris_test_labels <- iris_norm[sample_set==2,5]
+
+```
+
+## BUILD THE FRIGGIN MODEL :O :O :O
+https://rpubs.com/njvijay/16444 
+
+#### what is knn?
+https://www.analyticsvidhya.com/blog/2015/08/learning-concept-knn-algorithms-programming/
+
+
+```{r}
+#train the model using the 60% of data 
+iris_train <- train(Species ~ ., iris_norm_train,
+                   method = "knn",
+                   trControl = trainControl(method = "cv")
+)
+
+#plot the best value for k
+plot(iris_train)
+
+#NOTE: the function loops through to find the best value for k (k = 5) nb: changes because cv sampling changes accuracy each time
+
+#test using new data to get predictions
+iris_pred <- predict(iris_train, newdata = iris_norm_test)
+iris_norm_test_1 <- iris_norm_test %>%
+  
+  iris_pred
+
+#compare with the 'true' values to see your accuracy
+confusionMatrix(iris_pred, iris_norm_test$Species)
+
+```
+
+#### wtf is cross validation?
+https://kevinzakka.github.io/2016/07/13/k-nearest-neighbor/
+
+trainControl(method = "cv") = k FOLD CROSS VALIDATION
+what?
+- a method that can be used to tune the hyperparameter K (k fold different to K)
+why?
+- the best K is the one that corresponds to the lowest test error rate, so let’s suppose we carry out repeated measurements of the test error for different values of K. Inadvertently, what we are doing is using the test set as a training set! (OVERFITTING)
+- An alternative and smarter approach involves estimating the test error rate by holding out a subset of the training set from the fitting process. This subset, called the validation set 
+How?
+- randomly dividing the training set into k groups, or folds, of approximately equal size
+- first fold is treated as a validation set, and the method is fit on the remaining k−1 folds
+- misclassification rate is then computed on the observations in the held-out fold. 
+- This procedure is repeated k times; each time, a different group of observations is treated as a validation set. 
+Output?
+- This process results in k estimates of the test error which are then averaged out
+
+### GET the overall accuracy 
+
+note: because the boolean statement evaluates to TRUE if the predictions match the observed cases
+the mean therefore finds a number between 0 & 1 and can be interpreted as the mean probability of TRUE statements (predicted correctly)
+
+```{r}
+mean(iris_pred == iris_norm_test$Species)
+```
+
+NOW:
+- I want to know about ROC Curves
+- Understand what the algorithm is actually doing
+- better understand how to use the INTERNAL normalisation functions (I did it using )
+- how do i visualise this bad boy? (plot decision boundaries in phase space...)
+
+
+## Rebuild the model using only Petals (better for visualisation & intuitive understanding)
+
 ```{r}
 
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+______________________________
+
+## Splitting test and training data using Tidyverse
+```{r}
 #create training tibble
 iris_training <- iris_norm %>%
   filter(sample_set == 1)
@@ -585,4 +729,4 @@ http://michael.hahsler.net/SMU/EMIS7332/R/regression.html
 https://rpubs.com/lwaldron/iris_regression
 https://www.kaggle.com/mgabrielkerr/d/uciml/iris/visualizing-knn-svm-and-xgboost-on-iris-dataset
 https://www.kaggle.com/edmwanza1/d/uciml/iris/descriptive-analytics-demo-using-iris 
-https://rpubs.com/njvijay/16444
+
