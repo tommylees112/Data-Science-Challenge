@@ -1,398 +1,623 @@
-Show in New WindowClear OutputExpand/Collapse Output
-  Sepal.Length    Sepal.Width     Petal.Length    Petal.Width          Species       Flower      
- Min.   :4.300   Min.   :2.000   Min.   :1.000   Min.   :0.100   setosa    :50   Min.   :  1.00  
- 1st Qu.:5.100   1st Qu.:2.800   1st Qu.:1.600   1st Qu.:0.300   versicolor:50   1st Qu.: 38.25  
- Median :5.800   Median :3.000   Median :4.350   Median :1.300   virginica :50   Median : 75.50  
- Mean   :5.843   Mean   :3.057   Mean   :3.758   Mean   :1.199                   Mean   : 75.50  
- 3rd Qu.:6.400   3rd Qu.:3.300   3rd Qu.:5.100   3rd Qu.:1.800                   3rd Qu.:112.75  
- Max.   :7.900   Max.   :4.400   Max.   :6.900   Max.   :2.500                   Max.   :150.00  
-Show in New WindowClear OutputExpand/Collapse Output
-Sepal.Length  Sepal.Width Petal.Length  Petal.Width      Species       Flower 
-   "numeric"    "numeric"    "numeric"    "numeric"     "factor"    "integer" 
-  Species    Flower      part   measure     value 
- "factor" "integer"  "factor"  "factor" "numeric" 
-    Species      Flower        part     measure       value 
-   "factor"   "integer" "character" "character"   "numeric" 
-Show in New WindowClear OutputExpand/Collapse Output
-Species  Flower    part measure   value 
-      0       0       0       0       0 
-Show in New WindowClear OutputExpand/Collapse Output
-Calling var(x) on a factor x is deprecated and will become an error.
-  Use something like 'all(duplicated(x)[-1L])' to test for a constant vector.$Sepal.Length
-[1] 0.8280661
+---
+title: "Iris DataExploration"
+author: "thomas.lees"
+date: "21/03/2017"
+output: html_document
+---
 
-$Sepal.Width
-[1] 0.4358663
+## Install the required packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 
-$Petal.Length
-[1] 1.765298
+# install.packages('tidyverse')
+# install.packages('gridExtra')
+# install.packages('forcats')
+#install.packages('viridis')
+install.packages('class')
+#install.packages('modelr')
+```
 
-$Petal.Width
-[1] 0.7622377
+## Import the required packages 
 
-$Species
-[1] 0.8192319
+https://cran.r-project.org/web/packages/ggforce/vignettes/Visual_Guide.html - ggforce
+- 
 
-$Flower
-[1] 43.44537
+```{r}
+library(tidyverse)
+library(grid)
+library(gridExtra)
+library(forcats)
+library(modelr)
+```
 
-argument is not numeric or logical: returning NA$Sepal.Length
-[1] 5.843333
+## Data cleaning
+load iris data into a tibble for more intuitive exploration and manipulation
 
-$Sepal.Width
-[1] 3.057333
+WHAT: perform some quick raw iris data overview and then transform it to create the long version. Then we coerce some character variables to R factors for better graphic analysis later. Then we proceed onto performing some housekeeping in which we check for missing and special values. 
 
-$Petal.Length
-[1] 3.758
+```{r}
+iris = as_tibble(iris)
+summary(iris)
+```
 
-$Petal.Width
-[1] 1.199333
+Have a SECOND LONG FORMAT tibble (https://www.kaggle.com/edmwanza1/d/uciml/iris/descriptive-analytics-demo-using-iris)
 
-$Species
-[1] NA
+long_iris is longer with 600 observations & 4 variables. Don't be confused, the data is the same just formatted differently.
 
-$Flower
-[1] 75.5
+```{r}
+long_iris <- iris %>% 
+  gather(key= 'part', value = 'value', Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) %>%
+  separate(part,c('part','measure'), sep = '\\.')
+```
 
-Show in New WindowClear OutputExpand/Collapse Output
+gather() - key = the column names you want / value = the value names / the columns you want under the key 
+separate() - split the 'part' column at the '.' into two columns - 'part' and 'measure'
+note: needs to be \\. to escape the first \ and then \.
 
-Show in New WindowClear OutputExpand/Collapse Output
-	
-`geom_smooth()` using method = 'loess'
+```{r}
+long_iris2 <- iris %>%
+  gather(key='part',value='value',Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) %>%
+  separate(part,into = c('part','measure'), sep='\\.')
+```
 
-Show in New WindowClear OutputExpand/Collapse Output
+coerce character variables into factors for ease of analysis
 
-Show in New WindowClear OutputExpand/Collapse Output
+```{r}
+factors <- c('part','measure')
+long_iris[factors] <- lapply(long_iris[factors],as.factor)
+```
 
-Show in New WindowClear OutputExpand/Collapse Output
+## early exploration
 
-Show in New WindowClear OutputExpand/Collapse Output
+use sapply() to apply a function to each variable 
 
-Show in New WindowClear OutputExpand/Collapse Output
-Species
-<fctr>
-Flower
-<int>
-part
-<fctr>
-measure
-<fctr>
-value
-<dbl>
-setosa	1	Sepal	Length	5.1
-setosa	2	Sepal	Length	4.9
-setosa	3	Sepal	Length	4.7
-setosa	4	Sepal	Length	4.6
-setosa	5	Sepal	Length	5.0
-setosa	6	Sepal	Length	5.4
-6 rows
-Show in New WindowClear OutputExpand/Collapse Output
+```{r}
 
-Show in New WindowClear OutputExpand/Collapse Output
-Species
-<fctr>
-part
-<fctr>
-measure
-<fctr>
-mean
-<dbl>
-setosa	Petal	Length	1.462	
-setosa	Petal	Width	0.246	
-setosa	Sepal	Length	5.006	
-setosa	Sepal	Width	3.428	
-versicolor	Petal	Length	4.260	
-versicolor	Petal	Width	1.326	
-versicolor	Sepal	Length	5.936	
-versicolor	Sepal	Width	2.770	
-virginica	Petal	Length	5.552	
-virginica	Petal	Width	2.026	
-Next12Previous
-1-10 of 12 rows
-grouped_df
-12 x 4
+sapply(iris,class)
+
+sapply(long_iris,class)
+
+sapply(long_iris2,class)
+
+```
+
+check for missing values
+```{r}
+# CREATE A FUNCTION
+na_data <- function(x){
+  sum(is.na(x))/length(x)*100
+}
+#WHY DOES IT NEED THE /LENGTH*100??
+
+na_data2 <- function(x){
+  sum(is.na(x))
+}
+
+#loop it over our dataset
+apply(long_iris,2,na_data2)
+
+```
 
 
-Show in New WindowClear OutputExpand/Collapse Output
-Species
-<fctr>
-part
-<fctr>
-measure
-<fctr>
-mean
-<dbl>
-sd
-<dbl>
-ymax
-<dbl>
-setosa	Petal	Length	1.462	0.1736640	1.6356640	
-setosa	Petal	Width	0.246	0.1053856	0.3513856	
-setosa	Sepal	Length	5.006	0.3524897	5.3584897	
-setosa	Sepal	Width	3.428	0.3790644	3.8070644	
-versicolor	Petal	Length	4.260	0.4699110	4.7299110	
-versicolor	Petal	Width	1.326	0.1977527	1.5237527	
-versicolor	Sepal	Length	5.936	0.5161711	6.4521711	
-versicolor	Sepal	Width	2.770	0.3137983	3.0837983	
-virginica	Petal	Length	5.552	0.5518947	6.1038947	
-virginica	Petal	Width	2.026	0.2746501	2.3006501	
-Next12Previous
-1-10 of 12 rows | 1-6 of 7 columns
-grouped_df
-12 x 7
+## map() series to loop over variables
+
+map is super useful, just input a tibble and then the function that you want to be repeated over the data
+```{r}
+map(iris,sd)
+map(iris,mean)
+```
+
+check for other values (non numeric)
+
+is_special <- function(x){
+  if(is.numeric(x)) !is.finite(x) else is.na(x)
+}
+
+sapply(long_iris,is_special)
+
+## Visualise the data
+
+Some initial plots of individual dimensions
+
+```{r}
+ggplot(iris) +
+  geom_point(mapping=aes(x=Sepal.Length,y=Sepal.Width,col=Species,shape=Species))
+```
+
+```{r}
+ggplot(iris,mapping=aes(x=iris$Sepal.Width,y=iris$Sepal.Length,col=Species)) +
+  geom_point() +
+  geom_smooth()
+```
+
+```{r}
+ggplot(iris, mapping = aes())+
+  geom_bar(mapping = aes(x=Species,fill=Species))
+```
 
 
-
-Show in New WindowClear OutputExpand/Collapse Output
-R Console
-
-
-Show in New WindowClear OutputExpand/Collapse Output
-Sepal.Length
-<dbl>
-Sepal.Width
-<dbl>
-Petal.Length
-<dbl>
-Petal.Width
-<dbl>
-Species
-<fctr>
-Flower
-<int>
-5.1	3.5	1.4	0.2	setosa	1
-4.9	3.0	1.4	0.2	setosa	2
-4.7	3.2	1.3	0.2	setosa	3
-4.6	3.1	1.5	0.2	setosa	4
-5.0	3.6	1.4	0.2	setosa	5
-5.4	3.9	1.7	0.4	setosa	6
-4.6	3.4	1.4	0.3	setosa	7
-5.0	3.4	1.5	0.2	setosa	8
-4.4	2.9	1.4	0.2	setosa	9
-4.9	3.1	1.5	0.1	setosa	10
-Next123456...15Previous
-1-10 of 150 rows
-Show in New WindowClear OutputExpand/Collapse Output
-Sepal.Length
-<dbl>
-Sepal.Width
-<dbl>
-Petal.Length
-<dbl>
-Petal.Width
-<dbl>
-5.1	3.5	1.4	0.2	
-4.9	3.0	1.4	0.2	
-4.7	3.2	1.3	0.2	
-4.6	3.1	1.5	0.2	
-5.0	3.6	1.4	0.2	
-5.4	3.9	1.7	0.4	
-4.6	3.4	1.4	0.3	
-5.0	3.4	1.5	0.2	
-4.4	2.9	1.4	0.2	
-4.9	3.1	1.5	0.1	
-Next123456...15Previous
-1-10 of 150 rows | 1-4 of 6 columns
-tbl_df
-150 x 6
-Species
-<fctr>
-Flower
-<int>
-key
-<chr>
-value
-<dbl>
-setosa	1	Sepal.Length	5.1	
-setosa	2	Sepal.Length	4.9	
-setosa	3	Sepal.Length	4.7	
-setosa	4	Sepal.Length	4.6	
-setosa	5	Sepal.Length	5.0	
-setosa	6	Sepal.Length	5.4	
-setosa	7	Sepal.Length	4.6	
-setosa	8	Sepal.Length	5.0	
-setosa	9	Sepal.Length	4.4	
-setosa	10	Sepal.Length	4.9	
-Next123456...60Previous
-1-10 of 600 rows
-tbl_df
-600 x 4
- 
- 
-Species
-<fctr>
-Flower
-<int>
-Part
-<chr>
-Measure
-<chr>
-value
-<dbl>
-1	setosa	1	Sepal	Length	5.1
-2	setosa	2	Sepal	Length	4.9
-3	setosa	3	Sepal	Length	4.7
-4	setosa	4	Sepal	Length	4.6
-5	setosa	5	Sepal	Length	5.0
-6	setosa	6	Sepal	Length	5.4
-7	setosa	7	Sepal	Length	4.6
-8	setosa	8	Sepal	Length	5.0
-9	setosa	9	Sepal	Length	4.4
-10	setosa	10	Sepal	Length	4.9
-Next123456...60Previous
-1-10 of 600 rows
-tbl_df
-600 x 5
- 
- 
-Species
-<fctr>
-Flower
-<int>
-Part
-<chr>
-Length
-<dbl>
-Width
-<dbl>
-1	setosa	1	Petal	1.4	0.2
-2	setosa	1	Sepal	5.1	3.5
-3	setosa	2	Petal	1.4	0.2
-4	setosa	2	Sepal	4.9	3.0
-5	setosa	3	Petal	1.3	0.2
-6	setosa	3	Sepal	4.7	3.2
-7	setosa	4	Petal	1.5	0.2
-8	setosa	4	Sepal	4.6	3.1
-9	setosa	5	Petal	1.4	0.2
-10	setosa	5	Sepal	5.0	3.6
-Next123456...30Previous
-1-10 of 300 rows
-tbl_df
-300 x 5
- 
- 
-Species
-<fctr>
-Flower
-<int>
-Part
-<chr>
-Length
-<dbl>
-Width
-<dbl>
-1	setosa	1	Petal	1.4	0.2
-2	setosa	1	Sepal	5.1	3.5
-3	setosa	2	Petal	1.4	0.2
-4	setosa	2	Sepal	4.9	3.0
-5	setosa	3	Petal	1.3	0.2
-6	setosa	3	Sepal	4.7	3.2
-7	setosa	4	Petal	1.5	0.2
-8	setosa	4	Sepal	4.6	3.1
-9	setosa	5	Petal	1.4	0.2
-10	setosa	5	Sepal	5.0	3.6
-Next123456...30Previous
-1-10 of 300 rows
-Show in New WindowClear OutputExpand/Collapse Output
-R Console
+```{r}
+ggplot(iris, mapping = aes(fill=Species)) +
+  geom_boxplot(mapping = aes(x=iris$Species,y=iris$Sepal.Width))
+```
 
 
+## More complicated plots (and multiple plots)
 
-Show in New WindowClear OutputExpand/Collapse Output
-  Sepal.Length       Sepal.Width       Petal.Length      Petal.Width            Species  
- Min.   :-1.86378   Min.   :-2.4258   Min.   :-1.5623   Min.   :-1.4422   setosa    :50  
- 1st Qu.:-0.89767   1st Qu.:-0.5904   1st Qu.:-1.2225   1st Qu.:-1.1799   versicolor:50  
- Median :-0.05233   Median :-0.1315   Median : 0.3354   Median : 0.1321   virginica :50  
- Mean   : 0.00000   Mean   : 0.0000   Mean   : 0.0000   Mean   : 0.0000                  
- 3rd Qu.: 0.67225   3rd Qu.: 0.5567   3rd Qu.: 0.7602   3rd Qu.: 0.7880                  
- Max.   : 2.48370   Max.   : 3.0805   Max.   : 1.7799   Max.   : 1.7064                  
-     Flower      
- Min.   :  1.00  
- 1st Qu.: 38.25  
- Median : 75.50  
- Mean   : 75.50  
- 3rd Qu.:112.75  
- Max.   :150.00  
-Show in New WindowClear OutputExpand/Collapse Output
-Sepal.Length
-<dbl>
-Sepal.Width
-<dbl>
-Petal.Length
-<dbl>
-Petal.Width
-<dbl>
-Species
-<fctr>
-Flower
-<int>
-1.87988207	-0.59039513	1.32668801	0.9192233541	virginica	131	
-2.48369858	1.70388647	1.49663097	1.0504160307	virginica	132	
-0.67224905	-0.59039513	1.04344975	1.3128013839	virginica	133	
-0.55148575	-0.59039513	0.76021149	0.3944526477	virginica	134	
-0.30995914	-1.04925145	1.04344975	0.2632599711	virginica	135	
-2.24217198	-0.13153881	1.32668801	1.4439940605	virginica	136	
-0.55148575	0.78617383	1.04344975	1.5751867371	virginica	137	
-0.67224905	0.09788935	0.98680210	0.7880306775	virginica	138	
-0.18919584	-0.13153881	0.59026853	0.7880306775	virginica	139	
-1.27606556	0.09788935	0.93015445	1.1816087073	virginica	140	
-Next1...101112131415Previous
-131-140 of 150 rows | 1-6 of 7 columns
-Show in New WindowClear OutputExpand/Collapse Output
-  Sepal.Length       Sepal.Width         Petal.Length       Petal.Width             Species       Flower      
- Min.   :-1.86378   Min.   :-1.966964   Min.   :-1.50569   Min.   :-1.44224   setosa    :32   Min.   :  5.00  
- 1st Qu.:-0.89767   1st Qu.:-0.819823   1st Qu.:-1.26494   1st Qu.:-1.17986   versicolor:30   1st Qu.: 36.75  
- Median :-0.17309   Median :-0.131539   Median : 0.22206   Median : 0.13207   virginica :28   Median : 74.50  
- Mean   :-0.07917   Mean   :-0.006628   Mean   :-0.05992   Mean   :-0.06181                   Mean   : 73.68  
- 3rd Qu.: 0.55149   3rd Qu.: 0.786174   3rd Qu.: 0.74605   3rd Qu.: 0.78803                   3rd Qu.:108.50  
- Max.   : 2.24217   Max.   : 3.080455   Max.   : 1.77987   Max.   : 1.70638                   Max.   :150.00  
-   sample_set
- Min.   :1   
- 1st Qu.:1   
- Median :1   
- Mean   :1   
- 3rd Qu.:1   
- Max.   :1   
-  Sepal.Length      Sepal.Width         Petal.Length       Petal.Width             Species       Flower      
- Min.   :-1.7430   Min.   :-2.425820   Min.   :-1.56234   Min.   :-1.44224   setosa    :18   Min.   :  1.00  
- 1st Qu.:-0.8977   1st Qu.:-0.360967   1st Qu.:-1.22246   1st Qu.:-1.08146   versicolor:20   1st Qu.: 40.25  
- Median : 0.2496   Median :-0.131539   Median : 0.44865   Median : 0.26326   virginica :22   Median : 79.00  
- Mean   : 0.1188   Mean   : 0.009942   Mean   : 0.08988   Mean   : 0.09271                   Mean   : 78.23  
- 3rd Qu.: 0.8534   3rd Qu.: 0.384674   3rd Qu.: 0.88767   3rd Qu.: 0.82083                   3rd Qu.:118.75  
- Max.   : 2.4837   Max.   : 2.621599   Max.   : 1.60993   Max.   : 1.57519                   Max.   :149.00  
-   sample_set
- Min.   :2   
- 1st Qu.:2   
- Median :2   
- Mean   :2   
- 3rd Qu.:2   
- Max.   :2   
-Modify Chunk OptionsRun All Chunks AboveRun Current Chunk
-Show in New WindowClear OutputExpand/Collapse Output
- Show Traceback
-Error in knn(train = iris_training, test = iris_test, cl = iris_training_labels, : 'train' and 'class' have different lengths
-Modify Chunk OptionsRun All Chunks AboveRun Current Chunk
-Show in New WindowClear OutputExpand/Collapse Output
-Sepal.Length
-<dbl>
-Sepal.Width
-<dbl>
-Petal.Length
-<dbl>
-Petal.Width
-<dbl>
-1.87988207	-0.59039513	1.32668801	0.9192233541	
-0.55148575	-0.59039513	0.76021149	0.3944526477	
-0.67224905	0.09788935	0.98680210	0.7880306775	
-0.18919584	-0.13153881	0.59026853	0.7880306775	
-1.03453895	0.09788935	1.04344975	1.5751867371	
--0.05233076	-0.81982329	0.76021149	0.9192233541	
-1.15530226	0.32731751	1.21339271	1.4439940605	
-1.03453895	0.55674567	1.10009740	1.7063794137	
-0.79301235	-0.13153881	0.81685914	1.0504160307	
-0.06843254	-0.13153881	0.76021149	0.7880306775	
-Next1...456789Previous
-81-90 of 90 rows
-Show in New WindowClear OutputExpand/Collapse Output
- Show Traceback
-Error in model.frame.default(formula, data = data) : argument "data" is missing, with no default
+### Imported Function
+Super useful function = plotting multiple ggplots in a grid
+'multiplot'
+
+```{r}
+# Multiple plot function
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+P1 <- ggplot(iris, mapping = aes(x = Sepal.Length, color = Species, fill=Species)) +
+  geom_freqpoly(binwidth=0.3) +
+  theme(legend.position = 'none')
+
+P2 <- ggplot(iris, mapping = aes(x = Sepal.Width, color = Species, fill=Species)) +
+  geom_freqpoly(binwidth=0.3) +
+  theme(legend.position = 'none')
+
+P3 <- ggplot(iris, mapping = aes(x = Petal.Length, color = Species, fill=Species)) +
+  geom_freqpoly(binwidth=0.3) +
+  theme(legend.position = 'none')
+
+P4 <- ggplot(iris, mapping = aes(x = Petal.Width, color = Species, fill=Species)) +
+  geom_freqpoly(binwidth=0.3)
+
+multiplot(P1, P2, P3, P4, cols=2)
+```
+
+### Or you can do this with grid.arrange()
+```{r}
+
+P1 <- ggplot(iris, mapping = aes(x = Sepal.Length, color = Species, fill=Species)) +
+  geom_density(alpha=0.3) +
+  theme(legend.position = 'none')
+
+P2 <- ggplot(iris, mapping = aes(x = Petal.Length, color = Species, fill=Species)) +
+  geom_density(alpha=0.3) +
+  theme(legend.position = 'none')
+
+P3 <- ggplot(iris, mapping = aes(x = Sepal.Width, color = Species, fill=Species)) +
+  geom_density(alpha=0.3) +
+  theme(legend.position = 'none')
+
+P4 <- ggplot(iris, mapping = aes(x = Petal.Width, color = Species, fill=Species)) +
+  geom_density(alpha=0.3) +
+  theme(legend.position = 'none')
+
+grid.arrange(P1,
+             P2,
+             P3,
+             P4,
+             nrow = 2,
+             top = textGrob("Iris Density Plot", gp=gpar(fontsize=10)))
+
+```
+
+Working with the long_iris dataframe can help visualise the data much easier by having columns to split the data up 
+
+```{r}
+head(long_iris)
+```
+
+Let's draw boxplots ontop of underlying points to show how values vary for each species
+```{r}
+ggplot(data= long_iris, mapping= aes(x = Species, y = value, col = Species)) +
+  geom_jitter(alpha=0.3, size=0.8) + 
+  stat_boxplot(alpha = 0.5) + 
+  facet_grid(part~measure) +
+  ggtitle('Iris: Feature Exploration')
+```
+
+```{r}
+
+iris_mean <- long_iris %>%
+  group_by(Species,part,measure) %>%
+  summarize(
+    mean = mean(value)
+  ) 
+iris_mean
+
+ggplot(data= iris_mean, mapping= aes(x=measure,y=mean,fill=Species)) +
+  geom_bar(stat='identity',position='dodge')
+
+
+```
+
+Let's build some error bars (calculate the standard error for the plots)
+```{r}
+iris_mean_se <- long_iris %>%
+  group_by(Species,part,measure) %>%
+  summarise(
+    mean = mean(value),
+    sd = sd(value),
+    ymax = mean(value) + sd(value),
+    ymin = mean(value) - sd(value)
+  )
+iris_mean_se
+
+ggplot(iris_mean_se, mapping = aes(x=measure,y=mean)) +
+  geom_bar(aes(fill = Species) ,stat='identity',position='dodge') + 
+  geom_errorbar(mapping = aes(ymin= ymin, ymax= ymax), width = 0.2)
+
+#NOTE you need to set the positition dodge to the same to get them to line up (0.9 = default value for bars)
+#also necessary to place fill=Species in the entire ggplot mapping, otherwise only in local environment and not passed to 
+#geom_errorbar
+
+#USE MULTIPLOT to have multiple plots of the different subsets of teh data 
+dodge <- position_dodge(width = 0.9)
+
+petal <- ggplot(data = subset(iris_mean_se, part=='Petal'), mapping = aes(x=measure,y=mean,fill = Species)) +
+  geom_bar(stat='identity', position= dodge) + 
+  geom_errorbar(mapping = aes(ymin= ymin, ymax= ymax), position= dodge, width = 0.2) +
+  theme(legend.position = 'none')+
+  ggtitle("Iris: Petal")
+
+sepal <- ggplot(data = subset(iris_mean_se, part=='Sepal'), mapping = aes(x=measure,y=mean,fill = Species)) +
+  geom_bar(stat='identity', position= dodge) + 
+  geom_errorbar(mapping = aes(ymin= ymin, ymax= ymax), position= dodge, width = 0.2) +
+  ggtitle("Iris: Sepal")
+
+multiplot(petal, sepal, cols=2)
+
+```
+
+https://www.r-bloggers.com/building-barplots-with-error-bars/
+
+```{r}
+limits <- aes(ymax = iris_mean_se$ymax,
+              ymin = long_iris$ymin)
+dodge <- position_dodge(width = 0.9)
+
+ggplot(data = iris_mean_se, mapping = aes(x=measure,y=mean, fill = Species)) +
+  geom_bar(stat='identity', position= dodge) +
+  geom_errorbar(mapping=aes(ymin= ymin, ymax = ymax), position = dodge, width = 0.2)
+
+#BUT HOW DO I SUBSET BY THE PART OF THE PLANT?
+
+ggplot(data = iris_mean_se, mapping = aes(x=measure,y=mean, fill = Species)) +
+  geom_bar(stat='identity', position= dodge) +
+  geom_errorbar(mapping=aes(ymin= ymin, ymax = ymax), position = dodge, width = 0.2)
+
+```
+
+## Model the dataset
+```{r}
+library(modelr)
+options(na.action = na.warn)
+
+#allows base R modelling functions to be wrapped into a piped operations
+```
+
+I want to:
+  1) create a linear regression which predicts sepal length from sepal width
+  2) repeat for sepal length vs. petal width // sepal width vs. petal width // petal width vs. petal length etc.
+  3) try and predict whether the input value is of a sepal or a petal?
+  4) classify data and predict species (setosa, versicolor, virginica)
+
+Give each flower a unique ID so they can be subset from the long dataframe
+- tidy the dataset (EACH VARIABLE has to be a column)
+- linear regression of length and width of each specie - need WIDTH and LENGTH as columns in dataframe
+
+```{r}
+# first we must number the flowers from 1: end (number of rows in the dataset)
+iris$Flower <- 1:nrow(iris)
+iris
+```
+
+```{r}
+
+#original data
+iris
+
+#stage1
+
+wide_iris <- iris %>%
+  gather(key='key', value='value', -Species, -Flower) 
+
+wide_iris
+
+#stage2
+
+wide_iris <- iris %>%
+  gather(key='key', value='value', -Species, -Flower) %>%
+  separate(key, c('Part','Measure'), sep= "\\.")
+
+wide_iris
+
+#stage3
+
+wide_iris <- iris %>%
+  gather(key='key', value='value', -Species, -Flower) %>%
+  separate(key, c('Part','Measure'), sep= "\\.") %>%
+  spread(Measure, value)
+
+wide_iris
+```
+### what are gather, separate and spread doing?
+http://r4ds.had.co.nz/tidy-data.html#spreading-and-gathering 
+gather()
+- select a key which is the NAME OF THE COLUMNS in the untidy data (current variables)
+- the value for that variable 
+-keep only SPECIES, FLOWER columns and then the variable being measured (key=) and then value for that observation (value=)
+separate()
+-split a column into two 
+-split the key column, into 'part' and 'measure' at the '.' sign
+spread()
+-then spread the measure column into its separate components (length and width)
+-taking the value column as the valu for each of those cells!
+WE have tidy data :) 
+
+## 1 The relationship between length and width by species
+```{r}
+library(ggplot2)
+
+lm_iris <- ggplot(data = wide_iris, mapping= aes(x= Width, y= Length, col=Species))
+
+#how does length and width correlate for each species? (on separate charts)
+lm_iris1 <- lm_iris+
+  geom_jitter(alpha= 0.4, size= 0.8) +
+  facet_grid(. ~ Species) +
+  stat_smooth(method= 'lm', se=F) + 
+  ggtitle("Iris: Length vs. Width by Species")
+
+lm_iris1
+
+#how does length and width correlate for each part of the flower?
+lm_iris2 <- lm_iris +
+  geom_jitter(alpha=0.4, size=0.8) +
+  facet_grid(.~ Part) +
+  ggtitle("Iris: Length vs. Width by Flower Part")
+  
+lm_iris2
+
+#how does length and width correlate for each species (on a single chart)
+lm_iris3 <- lm_iris +
+  geom_point(alpha = 0.4, size= 0.8) + stat_smooth(method = 'lm', fullrange= T, size= 0.5) +
+  ggtitle("Iris: Length vs. Width by Species 2")
+  
+lm_iris3
+```
+
+## k nearest neighbours algorithm
+https://www.datacamp.com/community/tutorials/machine-learning-in-r#gs.arwbRyA
+
+to check if packages installed:
+- any(grepl("<name of your package>", installed.packages()))
+
+### Normalisation
+When? 
+In short: when you suspect that the data is not consistent. You can easily see this when you go through the results of the summary() function. 
+Look at the minimum and maximum values of all the (numerical) attributes. 
+If you see that one attribute has a wide range of values, you will need to normalize your dataset, because this means that the distance will be dominated by this feature. 
+For example, if your dataset has just two attributes, X and Y, and X has values that range from 1 to 1000, while Y has values that only go from 1 to 100, then Y's influence on the distance function will usually be overpowered by X's influence. 
+When you normalize, you actually adjust the range of all features, so that distances between variables with larger ranges will not be over-emphasised.
+
+Why?
+k-nearest neighbors with an Euclidean distance measure because we want all features to contribute equally
+
+what?
+Example normalisation - adjustment of each example individually
+Feature normalisation - adjust each feature in the same way across all examples
+
+How?
+create normalisation function
+```{r}
+normalise <- function(x) {
+  numerator <- x - min(x)
+  denominator <- max(x) - min(x)
+  return(numerator/denominator)
+}
+
+#zVar <- (myVar - mean(myVar)) / sd(myVar)
+
+```
+
+or use the scale() function
+https://www.r-bloggers.com/r-tutorial-series-centering-variables-and-generating-z-scores-with-the-scale-function/ 
+  x = a numeric object (eg column in data frame)
+  center = TRUE the means subtracted to center around 0
+  scale = TRUE the centered column values divided by standard deviation
+  (both true use the root mean square & a z score is calculated)
+  
+  http://stackoverflow.com/questions/15215457/standardize-data-columns-in-r 
+
+
+```{r}
+iris_norm <- iris %>%
+  mutate_each_(funs(scale(.) %>% as.vector),
+               vars= c('Sepal.Length','Sepal.Width','Petal.Length','Petal.Width'))
+
+summary(iris_norm)
+
+#recreate long form
+long_iris_norm <- iris_norm %>% 
+  gather(key= 'part', value = 'value', Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) %>%
+  separate(part,c('part','measure'), sep = '\\.')
+
+#coerce characters into factors
+factors <- c('part','measure')
+long_iris[factors] <- lapply(long_iris[factors],as.factor)
+
+#recreate wide form
+wide_iris_norm <- iris_norm %>%
+  gather(key='key', value='value', -Species, -Flower) %>%
+  separate(key, c('Part','Measure'), sep= "\\.") %>%
+  spread(Measure, value)
+
+```
+
+#### Z score normalisation
+
+See http://sebastianraschka.com/Articles/2014_about_feature_scaling.html
+- sigma = 1, mu = 0
+- features rescaled so they have properties of standard normal distribution
+-
+
+other use cases:
+- logistic regression, SVMs, perceptrons, neural networks etc. if you are using gradient descent/ascent-based optimization, otherwise some weights will update much faster than others
+-Principal Component Analysis (PCA) as an example where standardization is crucial, since it is “analyzing” the variances of the different features.
+
+
+Note:
+- think about whether we want to “standardize” or “normalize” (here: scaling to [0, 1] range) our data. 
+- Some algorithms assume that our data is centered at 0
+
+Equations:
+Standardization:
+z=x−μ/σ
+
+with mean:
+μ=1/N * ∑i=1N(xi)
+
+and standard deviation:
+σ= sqrt(1/N *∑i=1N (xi−μ)^2)
+
+#### Minmax scaling (normalisation)
+- data is scaled to a fixed range - usually 0 to 1.
+- xnorm = x-xmin / xmax-xmin
+
+use case:
+A popular application is image processing, where pixel intensities have to be normalized to fit within a certain range (i.e., 0 to 255 for the RGB color range). Also, typical neural network algorithm require data that on a 0-1 scale.
+
+## Separate into Training & Test Data
+
+We will put 67% data into training set, 33% into test set.
+
+N.B: instances of all three species needs to be present at more or less the same ratio as in your original data set.
+
+Therefore, we randomly sample a equal ratio from each species
+
+### Randomly Sample
+```{r}
+#set seed to make work reproducible
+set.seed(12345)
+
+#create sample vector (probabilities set @ 67% : 33%)
+sample_set <- sample(2, nrow(iris_norm), replace=TRUE, prob= c(0.67, 0.33))
+
+#add to tibble
+iris_norm['sample_set'] <- sample_set
+iris_norm
+```
+
+N.B:  the 'replace =' argument is set to TRUE: this means that you assign a 1 or a 2 to EVERY ROW (if it was false you wouldn't be able to reapply 1/2 to the rows).
+
+you assign a 1 or a 2 to a certain row and then reset the vector of 2 to its original state. This means that, for the next rows in your data set, you can either assign a 1 or a 2, each time again. The probability of choosing a 1 or a 2 should not be proportional to the weights amongst the remaining items, so you specify probability weights.
+
+### Subset training & test data
+```{r}
+
+#training and test variables taken (remove labels)
+iris_training <- iris_norm[sample_set==1,1:4]
+iris_test <- iris_norm[sample_set==2,1:4]
+
+#training and test LABELS extracted
+iris_training_labels <- iris_norm[sample_set==1,5]
+iris_test_labels <- iris_norm[sample_set==2,5]
+
+count(iris_training)
+count(iris_test)
+
+iris_training_labels
+iris_training
+
+```
+
+### Build 
+```{r}
+library(class)
+
+iris_pred <- knn(train= iris_training, test= iris_test, cl= iris_training_labels, k=3)
+
+```
+
+
+```{r}
+#install.packages('kknn')
+#library(kknn)
+
+#training and test variables taken
+iris_training <- iris_norm[sample_set==1,1:5]
+iris_test <- iris_norm[sample_set==2,1:5]
+
+#training and test LABELS extracted
+iris_training_labels <- iris_norm[sample_set==1,5]
+iris_test_labels <- iris_norm[sample_set==2,5]
+
+iris_pred <- train.kknn(Species ~., data= iris_training, k=, )
+```
+
+
+______________________________
+```{r}
+
+#create training tibble
+iris_training <- iris_norm %>%
+  filter(sample_set == 1)
+
+#create test tibble
+iris_test <- iris_norm %>%
+  filter(sample_set == 2)
+
+summary(iris_training)
+summary(iris_test)
+```
+NOTE: there are differnet numbers of species within test data & training data
+
+# Resources:
+http://michael.hahsler.net/SMU/EMIS7332/R/regression.html
+https://rpubs.com/lwaldron/iris_regression
+https://www.kaggle.com/mgabrielkerr/d/uciml/iris/visualizing-knn-svm-and-xgboost-on-iris-dataset
+https://www.kaggle.com/edmwanza1/d/uciml/iris/descriptive-analytics-demo-using-iris 
+
