@@ -585,4 +585,4 @@ http://michael.hahsler.net/SMU/EMIS7332/R/regression.html
 https://rpubs.com/lwaldron/iris_regression
 https://www.kaggle.com/mgabrielkerr/d/uciml/iris/visualizing-knn-svm-and-xgboost-on-iris-dataset
 https://www.kaggle.com/edmwanza1/d/uciml/iris/descriptive-analytics-demo-using-iris 
-
+https://rpubs.com/njvijay/16444
