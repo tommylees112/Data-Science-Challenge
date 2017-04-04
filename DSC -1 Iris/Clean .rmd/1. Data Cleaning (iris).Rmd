@@ -1,0 +1,97 @@
+---
+title: "Iris Data Cleaning"
+output: html_notebook
+---
+
+## Install the required packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# install.packages('tidyverse')
+# install.packages('gridExtra')
+# install.packages('forcats')
+#install.packages('viridis')
+#install.packages('class')
+#install.packages('modelr')
+#install.packages('kknn')
+#install.packages('pbkrtest')
+#install.packages('caret')
+
+```
+
+## Import the required packages 
+```{r}
+library(tidyverse)
+library(grid)
+library(gridExtra)
+library(forcats)
+library(modelr)
+library(caret)
+library(kknn)
+```
+
+# Data Cleaning
+1) Load the iris data into a tibble
+2) Get an overview of the data
+3) Coerce characters (strings) into factors (categorical data representation)
+4) Reformat tibble into a LONG format (for ease of visualisation)
+
+## Load Data into Tibble & Overview
+```{r}
+iris <- as_tibble(iris)
+summary(iris)
+```
+
+## Explore the number of variables per class visually
+```{r}
+ggplot(iris, mapping = aes())+
+  geom_bar(mapping = aes(x=Species,fill=Species))
+```
+
+## sapply() to check the class of variables
+```{r}
+
+sapply(iris,class)
+
+```
+
+ALSO could use the map() function (from the tidyverse)
+
+```{r}
+map(iris,sd)
+map(iris,mean)
+```
+
+## how many na values?
+```{r}
+# CREATE A FUNCTION
+na_data <- function(x){
+  sum(is.na(x))/length(x)*100
+}
+#WHY DOES IT NEED THE /LENGTH*100??
+
+na_data2 <- function(x){
+  sum(is.na(x))
+}
+
+#loop it over our dataset
+apply(long_iris,2,na_data2)
+
+```
+
+## Reformat the tibble into LONG format
+```{r}
+long_iris <- iris %>% 
+  gather(key= 'part', value = 'value', Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) %>%
+  separate(part,c('part','measure'), sep = '\\.')
+```
+
+gather() - key = the column header for the columns (as row values) / value = the name of the values (the old rows) / the columns you want under the key 
+separate() - split the 'part' column at the '.' into two columns - 'part' and 'measure'
+note: needs to be \\. to escape the first \ and then \.
+
+## Coerce Characters into factors
+```{r}
+factors <- c('part','measure')
+long_iris[factors] <- lapply(long_iris[factors],as.factor)
+```
