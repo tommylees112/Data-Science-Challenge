@@ -1,0 +1,80 @@
+---
+title: "Model the Iris Data (Linear Regression)"
+output: html_notebook
+---
+# 1) Linear Regression Model
+
+## Create a WIDE TABLE Format 
+FOR EACH Observation
+1) Add flower # as a variable
+2) have the PART of the flower as a categorical variable
+3) get the LENGTH and WIDTH as the two variable with numerical values in them
+
+TIDY Data 
+  Each column a VARIABLE; 
+  Each row an OBSERVATION;
+  Each cell a VALUE;
+
+```{r}
+wide_iris <- iris %>%
+  gather(key='key', value='value', -Species, -Flower) %>%
+  separate(key, c('Part','Measure'), sep= "\\.") %>%
+  spread(Measure, value)
+
+wide_iris
+```
+
+### Explanation
+http://r4ds.had.co.nz/tidy-data.html#spreading-and-gathering 
+gather()
+- select a key which is the NAME OF THE COLUMNS in the untidy data (current variables)
+- the value for that variable 
+-keep only SPECIES, FLOWER columns and then the variable being measured (key=) and then value for that observation (value=)
+separate()
+-split a column into two 
+-split the key column, into 'part' and 'measure' at the '.' sign
+spread()
+-then spread the measure column into its separate components (length and width)
+-taking the value column as the valu for each of those cells!
+WE have tidy data :) 
+
+## Build the Linear Model (using ggplot)
+NOTE: This analysis was flawed by the fact that I didn't separate Petal or Sepal when comparing length and width in plot1 & plot3
+
+### Load the ggplot() header
+```{r}
+lm_iris <- ggplot(data = wide_iris, mapping= aes(x= Width, y= Length, col=Species))
+```
+
+### Compare LENGTH and WIDTH for each species
+```{r}
+lm_iris1 <- lm_iris+
+  geom_jitter(alpha= 0.4, size= 0.8) +
+  facet_grid(. ~ Species) +
+  stat_smooth(method= 'lm', se=F) + 
+  ggtitle("Iris: Length vs. Width by Species")
+
+lm_iris1
+```
+
+### Compare Petal Length vs. Petal Width & Sepal Width vs. Sepal Length 
+
+```{r}
+lm_iris2 <- ggplot(data=wide_iris, mapping=aes(x=Width, y=Length)) +
+  geom_jitter(alpha=0.4, size=0.8) +
+  facet_grid(.~ Part) +
+  stat_smooth(method= 'lm', se=T) + 
+  ggtitle("Iris: Length vs. Width by Flower Part")
+  
+lm_iris2
+```
+
+### How does length and width compare for each species 
+NOTE: False Analysis because aggregated Sepals and Petals
+```{r}
+lm_iris3 <- lm_iris +
+  geom_point(alpha = 0.4, size= 0.8) + stat_smooth(method = 'lm', fullrange= T, size= 0.5) +
+  ggtitle("Iris: Length vs. Width by Species 2")
+  
+lm_iris3
+```
