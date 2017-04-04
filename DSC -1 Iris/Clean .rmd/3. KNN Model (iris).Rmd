@@ -1,0 +1,141 @@
+---
+title: "Model the Iris Data (KNN)"
+output: html_notebook
+---
+
+# 2) KNN Classification Model
+1) Normalise the data
+2) Training and Test Separation
+3) Random Sampling
+4) Remove labels from Test and Training Data
+5) Train the model
+6) Test the model
+
+## Normalise the variables in the dataset - Z SCORE STANDARDISATION
+This allows for each variable to be fairly weighted and not affected by one variable orders of magnitudes bigger than the others
+here 
+
+Sigma = 1 (Standard Deviation)
+Mu = 0 (Mean)
+
+### scale() function
+https://www.r-bloggers.com/r-tutorial-series-centering-variables-and-generating-z-scores-with-the-scale-function/ 
+  x = a numeric object (eg column in data frame)
+  center = TRUE the means subtracted to center around 0
+  scale = TRUE the centered column values divided by standard deviation
+  (both true use the root mean square & a z score is calculated)
+
+```{r}
+iris_norm <- iris %>%
+  mutate_each_(funs(scale(.) %>% as.vector),
+               vars= c('Sepal.Length','Sepal.Width','Petal.Length','Petal.Width'))
+
+summary(iris_norm)
+```
+
+### Do the same for the LONG tibble and WIDE tibble
+
+```{r}
+#recreate long form
+long_iris_norm <- iris_norm %>% 
+  gather(key= 'part', value = 'value', Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) %>%
+  separate(part,c('part','measure'), sep = '\\.')
+
+#coerce characters into factors
+factors <- c('part','measure')
+long_iris_norm[factors] <- lapply(long_iris[factors],as.factor)
+
+#recreate wide form
+wide_iris_norm <- iris_norm %>%
+  gather(key='key', value='value', -Species, -Flower) %>%
+  separate(key, c('Part','Measure'), sep= "\\.") %>%
+  spread(Measure, value)
+```
+
+## Separate into TRAINING and TEST data
+- We will put 67% data into training set, 33% into test set.
+- N.B: instances of all three species needs to be present at more or less the same ratio as in your original data set.
+- Therefore, we randomly sample a equal ratio from each species
+
+```{r}
+#set seed to make work reproducible
+set.seed(12345)
+
+#create sample vector (sample into 2 groups, probabilities set @ 67% : 33%)
+sample_set <- sample(2, nrow(iris_norm), replace=TRUE, prob= c(0.67, 0.33))
+
+#add 'sample label' to tibble for subsetting later
+iris_norm['sample_set'] <- sample_set
+iris_norm
+```
+
+N.B:  the 'replace =' argument is set to TRUE: this means that you assign a 1 or a 2 to EVERY ROW (if it was false you wouldn't be able to reapply 1/2 to the rows).
+you assign a 1 or a 2 to a certain row and then reset the vector of 2 to its original state. This means that, for the next rows in your data set, you can either assign a 1 or a 2, each time again. The probability of choosing a 1 or a 2 should not be proportional to the weights amongst the remaining items, so you specify probability weights.
+
+## Subset TRAIN & TEST data (and remove labels)
+90 Values in TRAINING data
+60 Values in TEST data
+```{r}
+#training and test variables taken (remove labels)
+iris_training <- iris_norm[sample_set==1,1:4]
+iris_test <- iris_norm[sample_set==2,1:4]
+
+#training and test LABELS extracted
+iris_training_labels <- iris_norm[sample_set==1,5]
+iris_test_labels <- iris_norm[sample_set==2,5]
+
+count(iris_training)
+count(iris_test)
+```
+
+## Train the model using caret()
+NB the model is called 'iris_train'
+```{r}
+#train the model using the 60% of data 
+iris_train <- train(Species ~ ., iris_norm_train,
+                   method = "knn",
+                   trControl = trainControl(method = "cv")
+)
+
+#plot the best value for k
+plot(iris_train)
+
+#NOTE: the function loops through to find the best value for k (k = 5) nb: changes because cv sampling changes accuracy each time
+```
+
+### NOTE: K FOLD Cross Validation of the model used
+https://kevinzakka.github.io/2016/07/13/k-nearest-neighbor/ 
+trControl = trainControl(method='cv') = 
+what?
+- a method that can be used to tune the hyperparameter K (k fold different to K)
+why?
+- the best K is the one that corresponds to the lowest test error rate, so let’s suppose we carry out repeated measurements of the test error for different values of K. Inadvertently, what we are doing is using the test set as a training set! (OVERFITTING)
+- An alternative and smarter approach involves estimating the test error rate by holding out a subset of the training set from the fitting process. This subset, called the validation set 
+How?
+- randomly dividing the training set into k groups, or folds, of approximately equal size
+- first fold is treated as a validation set, and the method is fit on the remaining k−1 folds
+- misclassification rate is then computed on the observations in the held-out fold. 
+- This procedure is repeated k times; each time, a different group of observations is treated as a validation set. 
+Output?
+- This process results in k estimates of the test error which are then averaged out
+
+## Test the model
+```{r}
+#test using new data to get predictions
+iris_pred <- predict(iris_train, newdata = iris_norm_test)
+iris_norm_test_1 <- iris_norm_test %>%
+  
+  iris_pred
+```
+
+## Assess the model (basic)
+```{r}
+#compare with the 'true' values to see your accuracy
+confusionMatrix(iris_pred, iris_norm_test$Species)
+```
+
+### Get the overall accuracy (%)
+```{r}
+mean(iris_pred == iris_norm_test$Species)
+```
+
