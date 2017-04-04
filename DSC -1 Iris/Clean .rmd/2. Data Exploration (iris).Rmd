@@ -1,0 +1,180 @@
+---
+title: "Data Exploration"
+output: html_notebook
+---
+
+## Useful Function
+Downloaded a useful function for viewing multiple plots
+http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(ggplot2)/ 
+
+```{r}
+# Multiple plot function
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+```
+
+# Univariate Plots 
+
+## Boxplot of Sepal Width Separated by Species
+
+```{r}
+ggplot(iris, mapping = aes(fill=Species)) +
+  geom_boxplot(mapping = aes(x=iris$Species,y=iris$Sepal.Width))
+```
+
+## Frequency Polygons of each Variable
+
+```{r}
+P1 <- ggplot(iris, mapping = aes(x = Sepal.Length, color = Species, fill=Species)) +
+  geom_freqpoly(binwidth=0.3) +
+  theme(legend.position = 'none')
+
+P2 <- ggplot(iris, mapping = aes(x = Sepal.Width, color = Species, fill=Species)) +
+  geom_freqpoly(binwidth=0.3) +
+  theme(legend.position = 'none')
+
+P3 <- ggplot(iris, mapping = aes(x = Petal.Length, color = Species, fill=Species)) +
+  geom_freqpoly(binwidth=0.3) +
+  theme(legend.position = 'none')
+
+P4 <- ggplot(iris, mapping = aes(x = Petal.Width, color = Species, fill=Species)) +
+  geom_freqpoly(binwidth=0.3)
+
+multiplot(P1, P2, P3, P4, cols=2)
+```
+
+## Density Plots of each Variable (using grid.arrange())
+
+```{r}
+
+P1 <- ggplot(iris, mapping = aes(x = Sepal.Length, color = Species, fill=Species)) +
+  geom_density(alpha=0.3) +
+  theme(legend.position = 'none')
+
+P2 <- ggplot(iris, mapping = aes(x = Petal.Length, color = Species, fill=Species)) +
+  geom_density(alpha=0.3) +
+  theme(legend.position = 'none')
+
+P3 <- ggplot(iris, mapping = aes(x = Sepal.Width, color = Species, fill=Species)) +
+  geom_density(alpha=0.3) +
+  theme(legend.position = 'none')
+
+P4 <- ggplot(iris, mapping = aes(x = Petal.Width, color = Species, fill=Species)) +
+  geom_density(alpha=0.3) +
+  theme(legend.position = 'none')
+
+grid.arrange(P1,
+             P2,
+             P3,
+             P4,
+             nrow = 2,
+             top = textGrob("Iris Density Plot", gp=gpar(fontsize=10)))
+
+```
+
+## Use the LONG TABLE to show multiple plots of each Feature/Variable
+
+```{r}
+ggplot(data= long_iris, mapping= aes(x = Species, y = value, col = Species)) +
+  geom_jitter(alpha=0.3, size=0.8) + 
+  stat_boxplot(alpha = 0.5) + 
+  facet_grid(part~measure) +
+  ggtitle('Iris: Feature Exploration')
+```
+
+## Mean and Variance Exploration for each Feature
+
+### First CREATE the Standard Deviation and Ymin/Ymax values for the error bars
+```{r}
+iris_mean_se <- long_iris %>%
+  group_by(Species,part,measure) %>%
+  summarise(
+    mean = mean(value),
+    sd = sd(value),
+    ymax = mean(value) + sd(value),
+    ymin = mean(value) - sd(value)
+  )
+iris_mean_se
+```
+
+### Then PLOT these Values ontop of MEAN BARS 
+- NOTE you need to set the positition dodge to the same to get them to line up (0.9 = default value for bars)
+- also necessary to place fill=Species in the entire ggplot mapping, otherwise only in local environment and not passed to geom_errorbar
+```{r}
+
+#USE MULTIPLOT to have multiple plots of the different subsets of the data 
+dodge <- position_dodge(width = 0.9)
+
+petal <- ggplot(data = subset(iris_mean_se, part=='Petal'), mapping = aes(x=measure,y=mean,fill = Species)) +
+  geom_bar(stat='identity', position= dodge) + 
+  geom_errorbar(mapping = aes(ymin= ymin, ymax= ymax), position= dodge, width = 0.2) +
+  theme(legend.position = 'none')+
+  ggtitle("Iris: Petal")
+
+sepal <- ggplot(data = subset(iris_mean_se, part=='Sepal'), mapping = aes(x=measure,y=mean,fill = Species)) +
+  geom_bar(stat='identity', position= dodge) + 
+  geom_errorbar(mapping = aes(ymin= ymin, ymax= ymax), position= dodge, width = 0.2) +
+  ggtitle("Iris: Sepal")
+
+multiplot(petal, sepal, cols=2)
+
+```
+
+# Multi Variate Plots
+
+## Scatter plot of Petals & Sepals (separated by Species)
+
+```{r}
+sepal_plot <- ggplot(iris) +
+  geom_point(mapping=aes(x=Sepal.Length,y=Sepal.Width,col=Species,shape=Species)) +
+  theme(legend.position = 'none')
+
+petal_plot <- ggplot(iris) +
+  geom_point(mapping=aes(x=Petal.Length,y=Petal.Width,col=Species,shape=Species)) +
+  theme(legend.position = 'top')
+
+multiplot(sepal_plot, petal_plot, cols=2)
+
+```
